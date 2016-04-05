@@ -17,8 +17,12 @@ __global__ void FindGradKernel(char *mat_grey, char *mat_conture, int width, int
 	int y = blockIdx.x;
 	int x = threadIdx.x;
 
-	
+	char tmp1, tmp2;
 
+	tmp1 = (mat_grey[y*width + x]) - (mat_grey[(y + 1)*width + x + 1]);
+	tmp2 = (mat_grey[y *width + x]) - (mat_grey[(y + 1)*width + x + 1]);
+
+	mat_conture[y*width + x] = sqrtf((tmp1*tmp1) + (tmp2*tmp2));
 	
 
 
@@ -28,10 +32,10 @@ __global__ void FindGradKernel(char *mat_grey, char *mat_conture, int width, int
 
 
 
-int FindGrad(char *mat_grey, char *mat_grad, int width, int height, int rad)
+int FindGrad(char *mat_grey, char *mat_grad, int width, int height)
 {
 	int  size = width*height,
-		 sizeMass = (rad + rad + 1)*(rad + rad + 1) - 1;
+		
 
 	char *d_mat_grey, *d_mat_grad;
 
@@ -46,33 +50,7 @@ int FindGrad(char *mat_grey, char *mat_grad, int width, int height, int rad)
 
 
 	FindGradKernel << < height, width >> >(d_mat_grey, d_mat_grad, width, height);
-
-	for (int x = rad; x < width - rad; x++)
-	{
-		//int *mass_toch = new int[sizeMass];
-		int mass_toch[24];
-		for (int y = rad; y < height - rad; y++)
-		{
-			for (int i = 0; i < sizeMass; i++) //обнуление массива
-				mass_toch[i] = 0;
-			int j = 0;
-			for (int i = x - rad; i < x + rad; i++)
-			{
-				if (y == sqrt(rad*rad - i*i))
-				{
-					mass_toch[j] = y;
-					j++;
-				}
-				
-			}
-
-			
-
-
-
-		}
-	}
-
+	
 
 	cudaMemcpy(mat_grad, d_mat_grad, 3*size * sizeof(char), cudaMemcpyDeviceToHost);
 
@@ -114,7 +92,7 @@ int main()
 		
 		unsigned int start_time = clock();
 
-		FindGrad((char*)im_grey.data, (char*)im_grad.data, width, height, rad);
+		FindGrad((char*)im_grey.data, (char*)im_grad.data, width, height);
 		
 				
 		cv::imshow("GraytImage", im_grad);
